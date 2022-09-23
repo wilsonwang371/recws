@@ -1,4 +1,4 @@
-module github.com/recws-org/recws
+module github.com/wilsonwang371/recws
 
 go 1.17
 
