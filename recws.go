@@ -380,6 +380,9 @@ func (rc *RecConn) writeControlPingMessage() error {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 
+	if !rc.IsConnectedUnprotected() {
+		return errors.New("writeControlPingMessage: not connected")
+	}
 	return rc.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second))
 }
 
@@ -486,5 +489,10 @@ func (rc *RecConn) IsConnected() bool {
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
 
+	return rc.isConnected
+}
+
+// IsConnectedUnprotected returns the WebSocket connection state without locking
+func (rc *RecConn) IsConnectedUnprotected() bool {
 	return rc.isConnected
 }
