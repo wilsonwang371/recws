@@ -47,13 +47,15 @@ type RecConn struct {
 	// NonVerbose suppress connecting/reconnecting messages.
 	NonVerbose bool
 
-	isConnected bool
-	mu          sync.RWMutex
-	url         string
-	reqHeader   http.Header
-	httpResp    *http.Response
-	dialErr     error
-	dialer      *websocket.Dialer
+	isConnected       bool
+	connectMu         sync.Mutex
+	connectInProgress bool
+	mu                sync.RWMutex
+	url               string
+	reqHeader         http.Header
+	httpResp          *http.Response
+	dialErr           error
+	dialer            *websocket.Dialer
 
 	*websocket.Conn
 }
@@ -421,6 +423,18 @@ func (rc *RecConn) keepAlive() {
 }
 
 func (rc *RecConn) connect() {
+	// we need to avoid race condition
+	rc.connectMu.Lock()
+	defer rc.connectMu.Unlock()
+
+	if rc.connectInProgress {
+		return
+	}
+	rc.connectInProgress = true
+	defer func() {
+		rc.connectInProgress = false
+	}()
+
 	b := rc.getBackoff()
 	rand.Seed(time.Now().UTC().UnixNano())
 
