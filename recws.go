@@ -48,7 +48,7 @@ type RecConn struct {
 	NonVerbose bool
 
 	isConnected       bool
-	connectMu         sync.Mutex
+	connectMu         sync.RWMutex
 	connectInProgress bool
 	mu                sync.RWMutex
 	url               string
@@ -424,16 +424,19 @@ func (rc *RecConn) keepAlive() {
 
 func (rc *RecConn) connect() {
 	// we need to avoid race condition
+	rc.connectMu.RLock()
+	if rc.connectInProgress {
+		rc.connectMu.RUnlock()
+		return
+	}
+	rc.connectMu.RUnlock()
+
 	rc.connectMu.Lock()
 	defer rc.connectMu.Unlock()
 
-	if rc.connectInProgress {
-		return
-	}
+	// let others know that we are in progress
 	rc.connectInProgress = true
-	defer func() {
-		rc.connectInProgress = false
-	}()
+	defer func() { rc.connectInProgress = false }()
 
 	b := rc.getBackoff()
 	rand.Seed(time.Now().UTC().UnixNano())
