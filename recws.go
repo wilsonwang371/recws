@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/jpillora/backoff"
+	"github.com/wilsonwang371/websocket"
 )
 
 // ErrNotConnected is returned when the application read/writes
